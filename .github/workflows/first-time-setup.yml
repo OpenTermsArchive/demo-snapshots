@@ -1,0 +1,49 @@
+name: first-time-setup
+run-name: Setup
+
+on:
+  # Run when repo is generated from template
+  create:
+
+# Only keep latest run of this workflow
+concurrency:
+  group: first-time-setup
+  cancel-in-progress: true
+
+permissions: 
+  actions: write
+  checks: write
+  contents: write
+
+
+jobs:
+  first-time-setup:
+    # Ensure this action is run only once
+    if: github.run_number == 1
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Remove first time setup workflow
+        run: rm -f .github/workflows/first-time-setup.yml
+
+      - name: Remove snapshots folders
+        run: rm -r */
+
+      - name: Update README
+        run: |
+          REPOSITORY_NAME=${{ github.event.repository.name }}
+          COLLECTION_NAME="${REPOSITORY_NAME//-snapshots}"
+          sed -i "s|# Demo snapshots|# $COLLECTION_NAME snapshots|g" README.md
+    
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Adapt template automatically"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
